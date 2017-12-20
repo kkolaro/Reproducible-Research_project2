@@ -1,0 +1,13 @@
+base
+methods
+datasets
+utils
+grDevices
+graphics
+stats
+boot
+xtable
+dplyr
+bindrcpp
+ggplot2
+knitr

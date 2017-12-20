@@ -1,0 +1,102 @@
+---
+title: "Impact of various natural event on humans and econemy"
+author: "Klod"
+date: "December 19, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Synopsis
+
+This  project involves exploring the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database and effect various natural events have on humans and economy . This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.The analysys show that tornado has the harmfull effect on humans, flood causes the most property damage, while drought crop demage .
+
+## Data processing
+
+Data imported from [Storme data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
+
+Raw data structure:
+
+```{r first, cache=TRUE}
+storm_data<-read.csv("StormData.csv")
+str(storm_data)
+head(storm_data,n=3)
+```
+
+Attrtibutes we are going to need in this analysis are:
+COUNTYNAME,STATE,EVTYPE,FATALITIES,INJURIES,PROPDMG,PROPDMGEXP,CROPDMG,CROPDMGEXP
+
+```{r second}
+
+storm_data_subset<-subset(storm_data,select = c("COUNTYNAME","STATE", "EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP","CROPDMG", "CROPDMGEXP"))
+```
+Finding out netural events caused max number of fatalities and injuries
+
+```{r third}
+fat_data<-aggregate(FATALITIES~EVTYPE,data = storm_data_subset,sum)
+max_fatalities<-fat_data[which.max(fat_data$FATALITIES),]
+ordered_fat_data<-fat_data[order(fat_data$FATALITIES, decreasing = T),]
+
+injur_data<-aggregate(INJURIES~EVTYPE,data = storm_data_subset,sum)
+max_injuries<-injur_data[which.max(injur_data$INJURIES),]
+ordered_injur_data<-injur_data[order(injur_data$INJURIES,decreasing = T),]
+```
+
+Transforming Property (PROPDMGEXP) and Crop data (CROPDMGEXP) in order to be able to calculate the total damage caused by various natural events
+
+```{r forth}
+storm_data_subset$PROPDMGEXP<-sub("[Hh]",2,storm_data_subset$PROPDMGEXP)
+storm_data_subset$PROPDMGEXP<-sub("[Kk]",3,storm_data_subset$PROPDMGEXP)
+storm_data_subset$PROPDMGEXP<-sub("[Mm]",6,storm_data_subset$PROPDMGEXP)
+storm_data_subset$PROPDMGEXP<-sub("[Bb]",9,storm_data_subset$PROPDMGEXP)
+storm_data_subset$PROPDMGEXP<-sub("[+ ?]",0,storm_data_subset$PROPDMGEXP)
+storm_data_subset$PROPDMGEXP[storm_data_subset$PROPDMGEXP=="0"]<-1
+
+storm_data_subset$CROPDMGEXP<-sub("[Hh]",2,storm_data_subset$CROPDMGEXP)
+storm_data_subset$CROPDMGEXP<-sub("[Kk]",3,storm_data_subset$CROPDMGEXP)
+storm_data_subset$CROPDMGEXP<-sub("[Mm]",6,storm_data_subset$CROPDMGEXP)
+storm_data_subset$CROPDMGEXP<-sub("[Bb]",9,storm_data_subset$CROPDMGEXP)
+storm_data_subset$CROPDMGEXP<-sub("[+ ?]",0,storm_data_subset$CROPDMGEXP)
+storm_data_subset$CROPDMGEXP[storm_data_subset$CROPDMGEXP=="0"]<-1
+
+
+storm_data_subset$PROPVALUE<-storm_data_subset$PROPDMG* 10^as.numeric(storm_data_subset$PROPDMGEXP)
+storm_data_subset$CROPVALUE<-storm_data_subset$CROPDMG* 10^as.numeric(storm_data_subset$CROPDMGEXP)
+
+property_damage<-aggregate(PROPVALUE~EVTYPE,data = storm_data_subset,sum)
+crop_damage<-aggregate(CROPVALUE~EVTYPE,data = storm_data_subset,sum)
+
+max_property_damage<-property_damage[which.max(property_damage$PROPVALUE),]
+max_crop_damage<-crop_damage[which.max(crop_damage$CROPVALUE),]
+
+ordered_propert_damage<-property_damage[order(property_damage$PROPVALUE,decreasing = T),]
+ordered_crop_damage<-crop_damage[order(crop_damage$CROPVALUE,decreasing = T),]
+
+
+```
+
+
+
+
+## Results
+
+Max fatalities  from 1950 to November 2011 were coused by  `r max_fatalities[1,1]`.Total of `r max_fatalities[1,2]` people was killed.
+
+Max injuries  from 1950 to November 2011 were coused by  `r max_injuries[1,1]`.Total of `r max_injuries[1,2]` people was injured.
+
+Max crop damage was caused by `r  max_crop_damage[1,1]`. The total amount of the damage   was `r  max_crop_damage[1,2]` $
+
+Max property  damage was caused by `r  max_property_damage[1,1]`. The total amount of the damage   was `r  max_property_damage[1,2]` $
+
+Plots showing  top five natural events caused max fatalities ,injuries, property  and crop demage 
+
+```{r fifth}
+barplot(ordered_fat_data[1:5,2], col =  heat.colors(5), legend.text=ordered_fat_data[1:5,1],ylim=c(0,6000),ylab="Fatalities",main = "Top natural events causing fatalities")
+barplot(ordered_fat_data[1:5,2], col =  heat.colors(5), legend.text=ordered_injur_data[1:5,1],ylim=c(0,6000),ylab="Injuries",main = "Top natural events causing injuries")
+pie(ordered_propert_damage[1:5,2],labels = ordered_propert_damage[1:5,1],main="Top five events causing max property damage", col = rainbow(5))
+pie(ordered_crop_damage[1:5,2],labels = ordered_crop_damage[1:5,1],main="Top five events causing max crop damage", col = rainbow(5))
+
+
+```
